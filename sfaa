@@ -1,0 +1,52 @@
+# Ver se realmente é necessario usar coplete.cases, se sim como minimizar o "dano"
+# Efeitos do modelo, ano entra ou nao?
+
+# install.packages("frontier")
+# install.packages("sas7bdat")
+# install.packages("plm")
+library( plm )
+library(frontier)
+library(sas7bdat)
+
+#lendo base de dados diretamete do sas
+exame<-read.sas7bdat("//sbsb2/DIEST/Microdados Estatistica/EXAME/exame_bndes.sas7bdat")
+
+☻#selecionando variaveis uteis  ☻☻☻☻☻ 
+exame<-exame[ ,c("empresa", "vend" ,"ativo","empregados", "bolsa","bndes","ano")]
+
+#transformando em painel
+painel<-plm.data(exame, c("empresa", "ano"))
+
+# Retirando missings
+painel<-painel[complete.cases(painel), ]
+
+attach(painel)
+names(painel)
+#####Maximum Likelihood Estimation ofStochastic Frontier Production and Cost Functions.Two specifications 
+#are available:the error components specification with time-varying efficiencies
+#and a model specification in which the firm effects are directly
+#influenced by a number of variables.
+ #como tratar nans e -inf?
+
+######
+
+modelo1 <- sfa( log( vend ) ~ log(ativo)+ log(empregados)+factor(bolsa)+factor(bndes)+
+                    log(ativo)^2+log(empregados)^2+log(ativo)*log(empregados)
+                  , data = painel, timeEffect = TRUE )
+summary(modelo1)
+hist(efficiencies(modelo1),100)
+
+
+modelo2 <- sfa( log( vend ) ~ log(ativo)+ log(empregados)+factor(bolsa)+factor(bndes)+
+                  log(ativo)^2+log(empregados)^2+log(ativo)*log(empregados)
+                , data = painel, ineffDecrease = T, maxit=1000, timeEffect = TRUE )
+summary(modelo2)
+hist(efficiencies(modelo2),100)
+
+
+modelo3 <- sfa( log( vend ) ~ log(ativo)+ log(empregados) + factor(bndes)
+                , data = painel, timeEffect = T )
+summary(modelo2)
+hist(efficiencies(modelo3),100)
+
+results<-efficiencies(modelo2)
